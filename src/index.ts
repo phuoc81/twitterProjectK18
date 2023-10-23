@@ -16,6 +16,12 @@ app.use('/users', usersRouter)
 // localhost:3000 không chạy qua middleware nào cả
 // localhost:3000/api chạy qua middleware 1
 
+//trở thành error handler cho cả app
+//các route trên bị lỗi sẽ next(err) và xuống đây
+// app.use((err, req, res, next) => {
+//   console.log('lỗi nè ' + err.message)
+//   res.status(400).json({ message: err.message })
+// })
 app.listen(PORT, () => {
   console.log(`Server đang chạy trên port ${PORT}`)
 })
