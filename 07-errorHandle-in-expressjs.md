@@ -278,16 +278,19 @@ app.get("/users", (req, res, next) => {
   - trong thư mục `utils` tạo file `handlers.ts` chứa hàm tiện ích giúp catch lỗi các `request handler`, trong file `handler.ts` có hàm như sau
 
     ```ts
-    export const wrapAsync = (func: any) => (req: any, res: any, next: any) => {
-      func(req, res, next).catch(next);
-    };
+    export const wrapAsync =
+      (func: RequestHandler) =>
+      async (req: Request, res: Response, next: NextFunction) => {
+        func(req, res, next).catch(next);
+      };
     ```
 
     hoặc nếu ta thích nó bất đồng bộ, và thích try catch ta có thể đổi thế này
 
     ```ts
     export const wrapAsync =
-      (func: any) => async (req: any, res: any, next: any) => {
+      (func: RequestHandler) =>
+      async (req: Request, res: Response, next: NextFunction) => {
         try {
           await func(req, res, next);
         } catch (error) {

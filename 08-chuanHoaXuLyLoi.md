@@ -103,18 +103,19 @@ ta sẽ chuẩn hóa quy trình xử lý lỗi giúp cho code của mình sẽ t
         await validation.run(req); //hàm tìm lỗi của middleware schema và đưa vào req
 
         const errors = validationResult(req); //funct này giúp ta lấy lỗi ra từ biến req
-        const errorObject = errors.mapped(); //hàm này giúp ta lấy lỗi ra dưới dạng object
 
         if (errors.isEmpty()) {
           return next();
         }
+        const errorObject = errors.mapped(); //hàm này giúp ta lấy lỗi ra dưới dạng object
+
         res.status(422).json({ errors: errorObject });
       };
     };
     ```
 
-    trong đó `errorObject` có dạng như sau, ví dụ ta sai email
-    ![Alt text](image-68.png)
+    **trong đó `errorObject` có dạng như sau, ví dụ ta sai email, sai password**
+    ![Alt text](image-278.png)
 
     nên ta xử lý như sau
 
@@ -129,16 +130,13 @@ ta sẽ chuẩn hóa quy trình xử lý lỗi giúp cho code của mình sẽ t
       ) => {
         await validation.run(req);
         const errors = validationResult(req);
-        const errorObject = errors.mapped(); //hàm này giúp ta lấy lỗi ra dưới dạng object
-        //xử lý object lỗi
+        if (errors.isEmpty()) {
+          return next();
+        }
+        const errorObject = errors.mapped();
         for (const key in errorObject) {
-          //phân rã msg của 1 cái lỗi ra
-          const { msg } = errorObject[key];
-          //"msg instanceof ErrorWithStatus " vừa giúp mình biết rằng có lỗi k, mà vừa định nghĩa cho msg
-          //và khi tường minh thì msg có  thể .status được
-          //nếu có lỗi của ErrorWithStatus thì mình return và next(msg): ném lỗi cho default error handler xử lý
-          //thay vì để nó chạy xuống và res.status(422).....
-          //nhờ vậy mà nếu có lỗi gì khác error do validator tạo ra thì nó sẽ k vào lỗi 422
+          const { msg } = errorObject[key]; //phân rã msg của mỗi lỗi
+          //nếu msg nào có dạng như ErrorWithStatus và có status khác 422 thì ném lỗi cho default error handler xử lý
           if (
             msg instanceof ErrorWithStatus &&
             msg.status !== HTTP_STATUS.UNPROCESSABLE_ENTITY
@@ -147,16 +145,12 @@ ta sẽ chuẩn hóa quy trình xử lý lỗi giúp cho code của mình sẽ t
           }
         }
 
-        if (errors.isEmpty()) {
-          return next();
-        }
-
         res.status(422).json({ errors: errorObject });
       };
     };
     ```
 
-    kết quả lỗi thu được gọn gàng nhưng status bị sai, nó đang là 400
+    kết quả lỗi thu được gọn gàng nhưng **status bị sai, nó đang là 400**
     ![Alt text](image-70.png)
 
   - `sai status` là do `default error handler` của chúng ta `luôn đang res status 400`, ta sẽ cần xử lý lại
@@ -193,9 +187,10 @@ ta sẽ chuẩn hóa quy trình xử lý lỗi giúp cho code của mình sẽ t
 
     - kết quả thu về, đã đầy đủ
       ![Alt text](image-71.png)
-      vì ta `.json(err)` error mà error lại chứa status và message nên bị thừa status ta có thể khắc phục bằng cách `.json(err.message)` nhưng như vậy k hay
+    - vì ta `.json(err)` error mà error lại chứa status và message nên bị thừa status
+    - ta có thể khắc phục bằng cách `.json(err.message)` nhưng như vậy k ổn, vì đây chỗ của tập trung các lỗi từ mọi nơi đỗ về, nhỡ đâu có `1 lỗi không có message` thì vô tình tra sẽ gữi `client` `undefined`
 
-  - ta sẽ trả ra object k có status bằng cách `delete err.status` nhưng như vậy thì rất kỳ
+  - ta có thể trả ra object k có status bằng cách `delete err.status` nhưng như vậy thì rất kỳ
   - ta sẽ dùng `lodash` để xử vấn đề thừa status trên
 
     cài đặt [`lodash`](https://lodash.com/docs): một thư viện chứa các hàm tiện ích cho js
@@ -219,7 +214,7 @@ ta sẽ chuẩn hóa quy trình xử lý lỗi giúp cho code của mình sẽ t
     ) => {
       res
         .status(err.status || HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(omit(err, ["status"]));
+        .json(omit(err, ["status"])); //fix chỗ này
     };
     ```
 
@@ -228,8 +223,7 @@ ta sẽ chuẩn hóa quy trình xử lý lỗi giúp cho code của mình sẽ t
     thành quả
     ![Alt text](image-72.png)
 
-- ban đầu ta dùng lỗi của email để làm ví dụ demo lỗi khác 422, nhưng thực tế thì lỗi `email tồn lại rồi` không
-  phải là lỗi 422. nên ta sẽ viết lại bth cho schema đó
+- **ban đầu ta dùng lỗi của email để làm ví dụ demo nếu có 1 lỗi khác 422**, nhưng thực tế thì lỗi `email tồn lại rồi` là lỗi 422. nên ta sẽ viết lại cho đúng logic
   ```ts
     email: {
       notEmpty: true,
@@ -246,10 +240,14 @@ ta sẽ chuẩn hóa quy trình xử lý lỗi giúp cho code của mình sẽ t
       }
     },
   ```
-- sau khi test lại ta thấy rằng lỗi mặc định của validator quá nhiều thông tin và quá xấu
+- **khi phát sinh lỗi bình thường trong checkSchema thì nó sẽ luôn là 422**
+- sau khi test lại ta thấy rằng lỗi mặc định của validator quá nhiều thông tin và quá xấu như này
   ![Alt text](image-73.png)
-- nên ta sẽ tạo cho những lỗi validator 1 dạng lỗi,
-- tạo ra các `message error` để gữi cho người dùng, trong folder `constants` tạo file `messages.ts`viết như sau
+- không biết lỗi do phần nào, quá nhiều thông tin thừa
+- nên ta sẽ tạo ra 1 object lỗi có cấu trúc gần giống như `errorObject` nhưng có message thông báo là lỗi `Validation error` và chỉ chứa `field: msg` để dễ dàng xử lý hơn thay vì `type, value, msg, path, location`
+- sơ đồ biến đổi từ `errorObject` sang `entityError`
+  ![Alt text](image-279.png)
+- tạo ra các `message` để gữi cho người dùng, trong folder `constants` tạo file `messages.ts`viết như sau
 
   ```ts
   export const USERS_MESSAGES = {
@@ -257,90 +255,85 @@ ta sẽ chuẩn hóa quy trình xử lý lỗi giúp cho code của mình sẽ t
   } as const; //để k ai chỉnh đc
   ```
 
-- vào file `Errors.ts` tạo thêm class `EntityError` dành để tạo ra lỗi phát sinh trong validator(lỗi 422)
+- **vào file `Errors.ts` tạo thêm class `EntityError` dùng để thay thế `errorObject` khai báo lổi 422, với message mặc định là `Validation error` và có thêm thuộc tính `errors` để lưu trữ các lỗi của từng `field`**
 
-```ts
-//đầu file
-//tạo kiểu lỗi giống thiết kế ban đâu
-//tạo kiểu lỗi giống thiết kế ban đâu
-type ErrorsType = Record<
-  string,
-  {
-    msg: string
-    [key: string]: any //này nghĩa ra ngoài ra muốn thêm vào gì thì thêm
+  ```ts
+  //đầu file
+  //tạo kiểu lỗi giống thiết kế ban đâu
+  type ErrorsType = Record<
+    string,
+    {
+      msg: string
+      [key: string]: any //này nghĩa ra ngoài ra muốn thêm vào gì thì thêm
+    }
+  >
+  // { [key: string]:  {
+  //     [field: string]:{
+  //         msg: string
+  //     }
+  // }
+  //}
+  export class ErrorWithStatus {
+      ....
   }
->
-// { [key: string]:  {
-//     [field: string]:{
-//         msg: string
-//     }
-// }
-//}
-export class ErrorWithStatus {
-    ....
-}
 
-export class EntityError extends ErrorWithStatus {
-  errors: ErrorsType
-  //truyển message mặt định
-  constructor({
-    message = USERS_MESSAGES.VALIDATION_ERROR,
-    errors
-  }: {
-    message?: string
+  export class EntityError extends ErrorWithStatus {
     errors: ErrorsType
-  }) {
-    super({ message, status: HTTP_STATUS.UNPROCESSABLE_ENTITY }) //tạo lỗi có status 422
-    this.errors = errors
+    //truyển message mặt định
+    constructor({
+      message = USERS_MESSAGES.VALIDATION_ERROR,
+      errors
+    }: {
+      message?: string
+      errors: ErrorsType
+    }) {
+      super({ message, status: HTTP_STATUS.UNPROCESSABLE_ENTITY }) //tạo lỗi có status 422
+      this.errors = errors
+    }
   }
-}
 
-```
+  ```
 
 - xử lý lại đoạn `validation.ts`
 
-```ts
-export const validate = (
-  validation: RunnableValidationChains<ValidationChain>
-) => {
-  return async (
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction
+  ```ts
+  export const validate = (
+    validation: RunnableValidationChains<ValidationChain>
   ) => {
-    await validation.run(req); //hàm tìm lỗi của middleware schema và đưa vào req
+    return async (
+      req: express.Request,
+      res: express.Response,
+      next: express.NextFunction
+    ) => {
+      await validation.run(req);
 
-    const errors = validationResult(req); //funct này giúp ta lấy lỗi ra từ biến req
-    // không lỗi thì next() để qua middleware tiếp theo
-    if (errors.isEmpty()) {
-      return next();
-    }
-    const errorObject = errors.mapped(); //hàm này giúp ta lấy lỗi ra dưới dạng object
-    const entityError = new EntityError({ errors: {} }); //tạo object lỗi mặc định
-    //xử lý object lỗi
+      const errors = validationResult(req);
 
-    for (const key in errorObject) {
-      const { msg } = errorObject[key];
-      //nếu lỗi phát sinh là lỗi của ErrorWithStatus thì ném lỗi cho default error handler xử lý
-      if (
-        msg instanceof ErrorWithStatus &&
-        msg.status !== HTTP_STATUS.UNPROCESSABLE_ENTITY
-      ) {
-        return next(msg);
+      if (errors.isEmpty()) {
+        return next();
       }
-      // nếu lỗi phát sinh không phải từ ErrorWithStatus thì lưu vào entityError
-      entityError.errors[key] = errorObject[key];
-    }
-    //sau khi tổng hợp xong thì ném ra sau
-    next(entityError);
-  };
-};
-```
+      const errorObject = errors.mapped();
+      const entityError = new EntityError({ errors: {} }); //entityError dùng để thay thế errorObject
 
-kết quả thu được đã có message, nhưng lỗi k rỏ ràng, thường là `msg: invalid value`
-![Alt text](image-74.png)
-![Alt text](image-77.png)
-![Alt text](image-75.png)
+      for (const key in errorObject) {
+        const { msg } = errorObject[key];
+        if (
+          msg instanceof ErrorWithStatus &&
+          msg.status !== HTTP_STATUS.UNPROCESSABLE_ENTITY
+        ) {
+          return next(msg);
+        }
+        // nếu lỗi phát sinh không dạng ErrorWithStatus và có status 422 thì thêm vào entityError với công thức đã nói trước đó
+        entityError.errors[key] = msg;
+      }
+      //sau khi tổng hợp xong thì ném ra cho defaultErrorHandler xử lý
+      next(entityError);
+    };
+  };
+  ```
+
+kết quả thu được đã đẹp, nhưng nếu ta để `name: ""` thì lỗi k rỏ ràng, thường là `msg: invalid value` vì ta chưa báo lỗi cụ thể
+![Alt text](image-280.png)
 
 # Khai báo message validation
 
