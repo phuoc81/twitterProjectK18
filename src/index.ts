@@ -1,6 +1,7 @@
-import express from 'express'
+import express, { NextFunction, Request, Response } from 'express'
 import usersRouter from './routes/users.route'
 import databaseService from './services/database.services'
+import { defaultErrorHandler } from './middlewares/error.middllewares'
 const app = express()
 app.use(express.json()) // dùng để parse body từ client gửi lên
 const PORT = 3000
@@ -15,6 +16,7 @@ app.use('/users', usersRouter)
 //localhost:3000/api/tweets
 // localhost:3000 không chạy qua middleware nào cả
 // localhost:3000/api chạy qua middleware 1
+app.use(defaultErrorHandler)
 
 //trở thành error handler cho cả app
 //các route trên bị lỗi sẽ next(err) và xuống đây

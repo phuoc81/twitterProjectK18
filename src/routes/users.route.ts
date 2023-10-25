@@ -2,25 +2,14 @@ import { Router } from 'express'
 import { checkSchema } from 'express-validator'
 import { loginController, registerController } from '~/controllers/users.controllers'
 import { loginValidator, registerValidator } from '~/middlewares/users.middliewares'
+import { wrapasync } from '~/utils/handlers'
 const usersRouter = Router()
 // middleware
 
 // controller
-usersRouter.get('/login', loginValidator, loginController)
+usersRouter.get('/login', loginValidator, wrapasync(loginController))
 
-// Description: register new user
-// Path: /users/register
-// method: POST
-/*
-body: {
-    name: string
-    email: string
-    password: string
-    comfirmPassword: string
-    date_of_birth: string theo chuẩn ISO 8601
-}
-*/
-usersRouter.post('/register', registerValidator, registerController)
+usersRouter.post('/register', registerValidator, wrapasync(registerController))
 
 //
 
