@@ -1,7 +1,13 @@
 import { Router } from 'express'
 import { checkSchema } from 'express-validator'
-import { loginController, registerController } from '~/controllers/users.controllers'
-import { loginValidator, registerValidator } from '~/middlewares/users.middliewares'
+import { loginController, logoutController, registerController } from '~/controllers/users.controllers'
+import {
+  accessTokenValidator,
+  loginValidator,
+  refreshTokenValidator,
+  registerValidator
+} from '~/middlewares/users.middliewares'
+import RefreshToken from '~/models/schemas/RefreshToken.schema'
 import { wrapasync } from '~/utils/handlers'
 const usersRouter = Router()
 // middleware
@@ -11,6 +17,7 @@ usersRouter.get('/login', loginValidator, wrapasync(loginController))
 
 usersRouter.post('/register', registerValidator, wrapasync(registerController))
 
+usersRouter.post('/logout', accessTokenValidator, refreshTokenValidator, wrapasync(logoutController))
 //
 
 export default usersRouter
