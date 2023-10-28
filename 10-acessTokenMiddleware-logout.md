@@ -11,7 +11,7 @@
     và body:{refresh_token} (dùng để xóa token trong collection refresh_tokens)
 - vậy để logout người dùng sẽ truyền lên access_token và refresh_token, gữi qua route là `users/logout` và xử lý `access_token` bằng 1 middleware như sau:
   - validate access_token (kiểm tra client có gữi lên không, xem có đúng không)
-  - gán decoded_authorization(json của payload: thông tin người gữi - user_iD) vào req : để sau này mình cần biết ai đã gữi req thì mình có xài
+  - gán decoded_authorization(json của payload: thông tin người gữi - user_id) vào req : để sau này mình cần biết ai đã gữi req thì mình có xài
 - xử lý `refresh_token` middleware như sau:
   - validate refresh_token(có gữi lên hay k, hết thời gian không, có trong database hay không)
   - gán decoded_authorization và req
@@ -78,8 +78,8 @@
                     const access_token = value.split(' ')[1]
                     //nếu nó có truyền lên , mà lại là chuỗi rỗng thì ta sẽ throw error
                     if (!access_token) {
-                        //throw new Error(USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED)
-                        //này trả ra 422(k khợp validator) thì k hay, ta phải trả ra 401(UNAUTHORIZED)
+                        //throw new Error(USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED)  //này trả ra 422(k hay)
+                       // thì k hay, ta phải trả ra 401(UNAUTHORIZED)
                         throw new ErrorWithStatus({
                             message: USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED,
                             status: HTTP_STATUS.UNAUTHORIZED
@@ -145,6 +145,7 @@
                             })
                         }
                         //kiểm tra xem access_token có hợp lệ hay không
+                        //ở đây mình trycath để tạo ra lỗi có status khác 422, nếu k thì khi phát sinh lỗi sẽ là 422
                         try {
                           const decoded_authorization = await verifyToken({ token: access_token })
                           //nếu không có lỗi thì ta lưu decoded_authorization vào req để khi nào muốn biết ai gữi req thì dùng
@@ -217,7 +218,7 @@
                   //nếu không có lỗi thì lưu decoded_refresh_token vào req để khi nào muốn biết ai gữi req thì dùng
                   //decoded_refresh_token có dạng như sau
                   //{
-                  //  user_Id: '64e3c037241604ad6184726c',
+                  //  user_id: '64e3c037241604ad6184726c',
                   //  token_type: 1,
                   //  iat: 1693883172,
                   //  exp: 1702523172
@@ -475,7 +476,7 @@ export const logoutController = async (req: Request, res: Response) => {
     secretOrPublicKey,
   }: {
     token: string
-    secretOrPublicKey: string
+    secretOrPublicKey: string //bỏ ? để ép truyền vào
   ```
 
   - ta làm vậy thì cách xài verify đã thay đổi, nên nó sẽ lỗi ở những chỗ dùng signToken và verifyToken
@@ -484,16 +485,16 @@ export const logoutController = async (req: Request, res: Response) => {
 
     ```ts
     class UsersService {
-      private signAccessToken(user_Id: string) {
+      private signAccessToken(user_id: string) {
         return signToken({
-          payload: { user_Id, token_type: TokenType.AccessToken },
+          payload: { user_id, token_type: TokenType.AccessToken },
           options: { expiresIn: process.env.ACCESS_TOKEN_EXPIRE_IN },
           privateKey: process.env.JWT_SECRET_ACCESS_TOKEN as string //thêm
         })
       }
-      private signRefreshToken(user_Id: string) {
+      private signRefreshToken(user_id: string) {
         return signToken({
-          payload: { user_Id, token_type: TokenType.RefreshToken },
+          payload: { user_id, token_type: TokenType.RefreshToken },
           options: { expiresIn: process.env.REFRESH_TOKEN_EXPIRE_IN },
           privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string //thêm
         })
@@ -535,14 +536,10 @@ export const logoutController = async (req: Request, res: Response) => {
     checkSchema(
       {
         Authorization: {
+          trim: true, //thêm
           custom: {
-            //value là giá trị của Authorization, req là req của client gữi lên server
             options: async (value: string, { req }) => {
-              //value của Authorization là chuỗi "Bearer <access_token>"
-              //ta sẽ tách chuỗi đó ra để lấy access_token bằng cách split
               const access_token = (value || '').split(' ')[1]
-              //nếu value là null thì ta sẽ gán nó bằng chuỗi rỗng
-              //thì khi băm ra nó vẫn là chuỗi ""
       ...
 
 
@@ -583,7 +580,7 @@ export const logoutController = async (req: Request, res: Response) => {
   ![Alt text](image-106.png)
 
 - tự động lưu access và refresh token vào envi
-  - login ta thêm script
+  - login ta thêm script vào task `test`
   ```js
   pm.test("Login thành công", function () {
     pm.response.to.have.status(200);

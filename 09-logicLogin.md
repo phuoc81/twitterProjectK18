@@ -61,8 +61,8 @@ export const loginValidator = validate(
 );
 ```
 
-- muốn biết người dùng có đăng nhập đúng không thì ta phải `user_id` và `password` nhưng
-  khi mà ta `login`(ta chỉ nhập `email` và `password`) thì `user_id` lấy từ đâu ?
+- khi đăng nhập thành công thì phải gữi access token và refresh token về cho client, nhưng muốn tạo ra 2 cái đó thì ta phải có `user_id` để tạo ra
+- khi mà ta `login`(ta chỉ nhập `email` và `password`) thì `user_id` lấy từ đâu ?
   trong `table users` vẫn sẽ có `_id` chính là `user_id`, khi mà ta nhập vào `email` và `password`
   nếu có `email` tồn tại thì ta sẽ tìm đc `user` tương ứng, vậy nên flow sẽ là
 
