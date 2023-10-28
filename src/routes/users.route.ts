@@ -26,3 +26,8 @@ export default usersRouter
 // tại sao signToken lại trả về một promise ? // vì nó dùng async await
 // tại sao khi dùng signToken và signRefreshToken lại cần token_type ? // vì nó dùng để phân biệt token và refresh token
 // runnableValidationChains là gì ? // là một bộ quy tắc để kiểm tra dữ liệu đầu vào
+
+// request handler là gì ? // là một hàm nhận vào req, res, next và trả về một promise
+// error handler là gì ? // là một hàm nhận vào err, req, res, next và trả về một promise
+// nếu ta throw error là "bla bla" trong hàm schema thì sẽ báo lỗi status là bao nhiêu ? // 400
+// nếu mình throw new errorwwtihtatus là 404 thì sẽ báo lỗi status là bao nhiêu ? // 404
