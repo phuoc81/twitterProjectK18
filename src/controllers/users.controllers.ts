@@ -3,12 +3,12 @@ import User from '~/models/schemas/User.schema'
 import usersService from '~/services/Users.services'
 import databaseService from '~/services/database.services'
 import { ParamsDictionary } from 'express-serve-static-core'
-import { RegisterReqBody } from '~/models/requests/User.requests'
+import { LoginReqBody, RegisterReqBody, logoutReqBody } from '~/models/requests/User.requests'
 import { threadId } from 'worker_threads'
 import { ErrorWithStatus } from '~/models/Errors'
 import { ObjectId } from 'mongodb'
 import { USERS_MESSAGES } from '~/constants/messages'
-export const loginController = async (req: Request, res: Response) => {
+export const loginController = async (req: Request<ParamsDictionary, any, LoginReqBody>, res: Response) => {
   //  nếu nó vòa được đây, tức là nó đã đăng nhập thành công
   const user = req.user as User // ép kiểu
   const user_id = user._id as ObjectId //objectid
@@ -29,7 +29,7 @@ export const registerController = async (req: Request<ParamsDictionary, any, Reg
   })
 }
 
-export const logoutController = async (req: Request, res: Response) => {
+export const logoutController = async (req: Request<ParamsDictionary, any, logoutReqBody>, res: Response) => {
   // lấy refresh token từ trong req.body
   const { refresh_token } = req.body
   // và vào database xóa refresh token này

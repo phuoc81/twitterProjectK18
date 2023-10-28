@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import { TokenPayload } from '~/models/requests/User.requests'
 
 //privateKey là password để được quyền tạo chữ ký jwt
 //làm hàm nhận vào payload, privateKey, options từ đó ký tên
@@ -28,7 +29,7 @@ export const verifyToken = ({
   token: string
   secretOrPublicKey?: string
 }) => {
-  return new Promise<jwt.JwtPayload>((resolve, reject) => {
+  return new Promise<TokenPayload>((resolve, reject) => {
     //method này sẽ verify token, nếu token hợp lệ thì nó sẽ trả về payload
     //nếu token không hợp lệ thì nó sẽ throw error
     //secretOrPublicKey dùng để verify token
@@ -36,7 +37,7 @@ export const verifyToken = ({
     //từ đó biết rằng access_token được tạo bởi chính server
     jwt.verify(token, secretOrPublicKey, (err, decoded) => {
       if (err) throw reject(err)
-      resolve(decoded as jwt.JwtPayload)
+      resolve(decoded as TokenPayload)
     })
   })
 }
