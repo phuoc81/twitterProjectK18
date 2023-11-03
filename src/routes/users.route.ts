@@ -1,11 +1,23 @@
+import { verify } from 'crypto'
 import { Router } from 'express'
 import { checkSchema } from 'express-validator'
-import { loginController, logoutController, registerController } from '~/controllers/users.controllers'
+import {
+  emailVerifyController,
+  forgotPasswordController,
+  loginController,
+  logoutController,
+  registerController,
+  resendEmailVerifyController,
+  verifyForgotPasswordTokenController
+} from '~/controllers/users.controllers'
 import {
   accessTokenValidator,
+  emailVerifyTokenValidator,
+  forgotPasswordValidator,
   loginValidator,
   refreshTokenValidator,
-  registerValidator
+  registerValidator,
+  verifyForgotPasswordTokenValidator
 } from '~/middlewares/users.middliewares'
 import RefreshToken from '~/models/schemas/RefreshToken.schema'
 import { wrapasync } from '~/utils/handlers'
@@ -18,7 +30,51 @@ usersRouter.get('/login', loginValidator, wrapasync(loginController))
 usersRouter.post('/register', registerValidator, wrapasync(registerController))
 
 usersRouter.post('/logout', accessTokenValidator, refreshTokenValidator, wrapasync(logoutController))
+/*
+des: verify email
+method: post
+path : /users/verify-email
+body: {
+  email_verify_token: string
+}
+*/
+usersRouter.post('/verify-email', emailVerifyTokenValidator, wrapasync(emailVerifyController))
+
+/*
+des: resend verify email
+method: post
+path : /users/resend-verify-email
+header: {
+  Authorization: "Bearer access_token"
+}
+ */
 //
+usersRouter.post('/resend-verify-email', accessTokenValidator, wrapasync(resendEmailVerifyController))
+
+/*
+des: forgot password
+method: post
+path : /users/forgot-password
+body: {
+  email: string
+}
+*/
+usersRouter.post('/forgot-password', forgotPasswordValidator, wrapasync(forgotPasswordController))
+
+/*
+
+des: verify forgot password
+method: post
+path : /users/verify-forgot-password
+body: {
+  forgot_password_token: string
+}
+*/
+usersRouter.post(
+  '/verify-forgot-password',
+  verifyForgotPasswordTokenValidator,
+  wrapasync(verifyForgotPasswordTokenController)
+)
 
 export default usersRouter
 
@@ -38,3 +94,5 @@ export default usersRouter
 // error handler là gì ? // là một hàm nhận vào err, req, res, next và trả về một promise
 // nếu ta throw error là "bla bla" trong hàm schema thì sẽ báo lỗi status là bao nhiêu ? // 400
 // nếu mình throw new errorwwtihtatus là 404 thì sẽ báo lỗi status là bao nhiêu ? // 404
+
+//
