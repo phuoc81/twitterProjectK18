@@ -3,7 +3,13 @@ import User from '~/models/schemas/User.schema'
 import usersService from '~/services/Users.services'
 import databaseService from '~/services/database.services'
 import { ParamsDictionary } from 'express-serve-static-core'
-import { LoginReqBody, RegisterReqBody, TokenPayload, logoutReqBody } from '~/models/requests/User.requests'
+import {
+  LoginReqBody,
+  RegisterReqBody,
+  ResetPasswordReqBody,
+  TokenPayload,
+  logoutReqBody
+} from '~/models/requests/User.requests'
 import { threadId } from 'worker_threads'
 import { ErrorWithStatus } from '~/models/Errors'
 import { ObjectId } from 'mongodb'
@@ -11,6 +17,7 @@ import { USERS_MESSAGES } from '~/constants/messages'
 import { Token } from 'typescript'
 import { UserVerifyStatus } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
+import { get } from 'lodash'
 export const loginController = async (req: Request<ParamsDictionary, any, LoginReqBody>, res: Response) => {
   //  nếu nó vòa được đây, tức là nó đã đăng nhập thành công
   const user = req.user as User // ép kiểu
@@ -99,5 +106,28 @@ export const forgotPasswordController = async (req: Request, res: Response) => {
 export const verifyForgotPasswordTokenController = async (req: Request, res: Response) => {
   return res.json({
     message: USERS_MESSAGES.VERIFY_FORGOT_PASSWORD_TOKEN_SUCCESS
+  })
+}
+
+export const resetPasswordController = async (
+  req: Request<ParamsDictionary, any, ResetPasswordReqBody>,
+  res: Response
+) => {
+  // muốn cập nhật mật khẩu mới thì cần có user_id và password mới
+  const { user_id } = req.decoded_forgot_password_token as TokenPayload
+  const { password } = req.body
+  // cập nhật password mới cho user có user_id này
+  const result = await usersService.resetPassword({ user_id, password })
+  return res.json(result)
+}
+
+export const getMeController = async (req: Request, res: Response) => {
+  // muốn lấy tt từ user thì cần có user_id
+  const { user_id } = req.decoded_authorization as TokenPayload
+  // lấy user từ trong database
+  const user = await usersService.getMe(user_id)
+  return res.json({
+    message: USERS_MESSAGES.GET_ME_SUCCESS,
+    result: user
   })
 }
